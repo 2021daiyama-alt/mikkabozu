@@ -14,7 +14,7 @@ let modal = null; // 文字を見せてコピーしてもらう画面（beta.js 
 const draft = {}; // 入力途中の文字。画面を描き直しても消えないようにここに持つ
 
 function load() {
-  const base = { current: null, history: [], offset: 0, custom: [], outbox: [], body: [] };
+  const base = { current: null, history: [], offset: 0, custom: [], outbox: [], body: [], ongoing: [], stopped: {} };
   try { return Object.assign(base, JSON.parse(localStorage.getItem(KEY)) || {}); }
   catch { return base; }
 }
@@ -53,7 +53,11 @@ function recordedToday() { return days().some(d => d.date === today()); }
 function triedIds() { return [...new Set(rounds().filter(faced).map(r => r.methodId))]; }
 // 試した方法がまた選べるようになる日。まだ待ち期間中ならその日付、選べるなら null。
 function cooldownUntil(id) {
-  const last = rounds().filter(r => r.methodId === id && faced(r)).flatMap(r => dayLog(r).map(d => d.date)).sort().pop();
+  if (isOngoing(id)) return null; // 続けている間は「継続中」として別に扱う
+  const dates = rounds().filter(r => r.methodId === id && faced(r)).flatMap(r => dayLog(r).map(d => d.date));
+  const stopped = (state.stopped || {})[id]; // 継続をやめた日からも1ヶ月
+  if (stopped) dates.push(stopped);
+  const last = dates.sort().pop();
   if (!last) return null;
   const until = addDays(last, COOLDOWN);
   return today() < until ? until : null;
@@ -69,7 +73,8 @@ function methodStats(id) {
 const AXES = [['how', 'やり方', () => HOWS], ['time', 'タイミング', () => TIMES], ['cat', 'ジャンル', () => CATS]];
 const REPORT_MIN = 2;
 function roundScore(r) {
-  return r.rating ? { good: 1, ok: 0, bad: -1 }[r.rating] : null;
+  // 「継続しながら次へ」を選んだ方法は、感想に加えて少し強い手がかりとして数える
+  return r.rating ? { good: 1, ok: 0, bad: -1 }[r.rating] + (r.kept ? 0.5 : 0) : null;
 }
 function report() {
   const scored = rounds().map(r => ({ m: M(r.methodId), s: roundScore(r) })).filter(x => x.s !== null);
@@ -82,7 +87,7 @@ function report() {
   });
   const affinity = m => axes.reduce((t, a) => t + (a.g[m[a.key]] ? a.g[m[a.key]].sum / a.g[m[a.key]].n : 0), 0);
   const cur = state.current && state.current.methodId;
-  const recs = scored.length < REPORT_MIN ? [] : methods().filter(m => m.id !== cur && !cooldownUntil(m.id) && methodStats(m.id).rating !== 'bad')
+  const recs = scored.length < REPORT_MIN ? [] : methods().filter(m => m.id !== cur && !isOngoing(m.id) && !cooldownUntil(m.id) && methodStats(m.id).rating !== 'bad')
     .map(m => ({ m, a: affinity(m) })).filter(x => x.a > 0).sort((x, y) => y.a - x.a).slice(0, 3).map(x => x.m);
   const main = axes.slice(0, 3).flatMap(a => a.rows);
   // 見出しは回数の多い傾向を優先する（1回だけの結果で断定しない）
@@ -169,7 +174,7 @@ function locked() {
   return !!c && (faced(c) < ROUND || !c.rating);
 }
 function start(id) {
-  if (locked() || cooldownUntil(id)) return;
+  if (locked() || cooldownUntil(id) || isOngoing(id)) return;
   archive();
   state.current = { methodId: id, startedAt: today(), checkins: [], misses: [], rating: null };
   sheetId = null; tab = 'home';
@@ -193,12 +198,12 @@ const actions = {
     c.last = null; c.rating = null;
   },
   rate: v => { if (state.current) state.current.rating = v; },
-  switch: () => { if (!locked()) { archive(); tab = 'catalog'; } },
+  switch: () => { if (!locked()) { draft.swap = false; archive(); tab = 'catalog'; } },
   browse: () => { tab = 'catalog'; },
   nextday: () => { state.offset++; },
   reset: () => {
     if (!resetArmed) { resetArmed = true; return; }
-    state = { current: null, history: [], offset: 0, custom: [], outbox: [], body: [] }; resetArmed = false; tab = 'home';
+    state = { current: null, history: [], offset: 0, custom: [], outbox: [], body: [], ongoing: [], stopped: {} }; resetArmed = false; tab = 'home';
   },
 };
 
@@ -231,7 +236,7 @@ function hero() {
       <div><small>試した種類</small><b>${kinds}</b><i>種類</i></div>
       <div><small>できた日の累計</small><b>${total}</b><i>日</i></div>
     </div>
-    <p class="hero-line">${since ? `ダイエット開始から${since}日目` : '気になるものを、まず3日。自分の体で試して、合うものを探そう。'}</p>
+    <p class="hero-line">${since ? `ダイエット開始から${since}日目${ongoing().length ? ` ・ 続けている習慣 ${ongoing().length}個` : ''}` : '気になるものを、まず3日。自分の体で試して、合うものを探そう。'}</p>
   </section>`;
 }
 
@@ -246,7 +251,7 @@ function currentCard() {
   const c = state.current;
   if (!c) {
     const recs = report().recs;
-    const picks = recs.length ? recs : [...STARTERS.map(M), ...methods()].filter((m, i, a) => a.indexOf(m) === i && !cooldownUntil(m.id)).slice(0, 3);
+    const picks = recs.length ? recs : [...STARTERS.map(M), ...methods()].filter((m, i, a) => a.indexOf(m) === i && !cooldownUntil(m.id) && !isOngoing(m.id)).slice(0, 3);
     return `
     <section class="card">
       <h2>${state.history.length ? '次の3日間をえらぼう' : '最初の3日間をえらぼう'}</h2>
@@ -277,9 +282,7 @@ function currentCard() {
         `<button class="rate ${c.rating === k ? 'sel' : ''}" data-act="rate" data-val="${k}">${v}</button>`).join('')}</div>
       <label class="q" for="note">ひとことメモ <small>任意</small></label>
       <textarea id="note" class="note-input" rows="2" maxlength="200" placeholder="試して感じたこと、あとで振り返りたいこと">${esc(c.note || '')}</textarea>
-      <p class="q">次の3日間は、別の方法をためそう</p>
-      <button class="btn primary" data-act="switch" ${c.rating ? '' : 'disabled'}>別のダイエット法をためす</button>
-      <p class="muted center">${c.rating ? `「${m.name}」は1ヶ月後（${short(cooldownUntil(m.id))}）からまた選べます。` : '先に、やってみた感じをえらんでください。'}</p>
+      ${nextChoice(c, m)}
       ${undo}
     </section>`;
   }
@@ -303,7 +306,7 @@ function currentCard() {
   </section>`;
 }
 
-function viewHome() { return hero() + currentCard(); }
+function viewHome() { return hero() + currentCard() + ongoingCard(); }
 
 function viewCatalog() {
   const chips = [['all', 'すべて'], ...Object.entries(CATS), ...((state.custom || []).length ? [['mine', 'じぶんで追加']] : [])].map(([k, v]) =>
@@ -311,7 +314,8 @@ function viewCatalog() {
   const recIds = report().recs.map(m => m.id);
   const list = methods().filter(m => filter === 'all' || m.cat === filter || (filter === 'mine' && m.custom)).map(m => {
     const s = methodStats(m.id), cur = state.current && state.current.methodId === m.id, wait = cooldownUntil(m.id);
-    const tag = cur ? '<em class="tag now">挑戦中</em>'
+    const tag = isOngoing(m.id) ? '<em class="tag">継続中</em>'
+      : cur ? '<em class="tag now">挑戦中</em>'
       : s.days ? `<em class="tag">${s.days}日やった${s.rating ? ' ' + RATINGS[s.rating].split(' ')[0] : ''}</em>`
       : recIds.includes(m.id) ? '<em class="tag rec">合いそう</em>'
       : m.custom ? '<em class="tag mine">じぶんで追加</em>' : '';
@@ -361,6 +365,7 @@ function viewRecord() {
     <p class="muted">3マスで1つの三日坊主。10個ならべば1ヶ月。うすいマスは、できなかった日。</p>
     ${reportCard()}
     ${stamps}
+    ${ongoingRecord()}
     <h3>これまでの三日坊主</h3>
     ${hist || '<p class="muted">まだ記録がありません。</p>'}
     ${bodySection()}
@@ -379,6 +384,7 @@ function sheet() {
   const label = cur && left > 0 ? 'いま挑戦中です'
     : c && left > 0 ? `「${M(c.methodId).name}」の3日間が終わったら選べます（あと${left}日）`
     : c && !c.rating ? `先に「${M(c.methodId).name}」の感想をえらぼう`
+    : isOngoing(m.id) ? 'いま継続中です'
     : wait ? `${short(wait)}からまた選べます`
     : '3日間やってみる';
   return `
@@ -393,7 +399,7 @@ function sheet() {
       ${m.tip ? `<dt>コツ</dt><dd>${m.tip}</dd>` : ''}
     </dl>
     ${notes}
-    <button class="btn primary" data-act="start" data-val="${m.id}" ${locked() || wait ? 'disabled' : ''}>${label}</button>
+    <button class="btn primary" data-act="start" data-val="${m.id}" ${locked() || wait || isOngoing(m.id) ? 'disabled' : ''}>${label}</button>
     <button class="btn" data-act="close">とじる</button>
     <button class="link" data-act="fbAbout" data-val="${m.id}">この方法について意見を送る</button>
     ${m.custom && !rounds().some(r => r.methodId === m.id) ? `<button class="link" data-act="delMethod" data-val="${m.id}">この方法を削除する</button>` : ''}

@@ -54,7 +54,7 @@ async function flush() {
 
 function resultText(withNotes) {
   const lines = rounds().filter(faced).map(r =>
-    `・${rawName(r.methodId)}：3日中${r.checkins.length}日できた／${r.rating ? RATINGS[r.rating].split(' ')[1] : '感想はまだ'}` +
+    `・${rawName(r.methodId)}：3日中${r.checkins.length}日できた／${r.rating ? RATINGS[r.rating].split(' ')[1] : '感想はまだ'}${r.kept ? '／継続を選んだ' : ''}` +
     (withNotes && r.note && r.note.trim() ? `／メモ：${r.note.trim()}` : ''));
   const mine = (state.custom || []).map(c => c.name);
   return [
@@ -101,7 +101,7 @@ Object.assign(actions, {
     try { obj = JSON.parse(draft.imp || ''); } catch { obj = null; }
     if (!obj || !Array.isArray(obj.history)) { importArmed = false; toast('読み込めませんでした。書き出した文字をそのまま貼りつけてください'); return; }
     if (!importArmed) { importArmed = true; return; }
-    state = Object.assign({ current: null, history: [], offset: 0, custom: [], outbox: [], body: [] }, obj);
+    state = Object.assign({ current: null, history: [], offset: 0, custom: [], outbox: [], body: [], ongoing: [], stopped: {} }, obj);
     importArmed = false; draft.imp = ''; tab = 'home';
     toast('記録を読み込みました');
   },

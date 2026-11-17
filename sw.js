@@ -1,6 +1,6 @@
 // オフラインでも開けるようにする。オンライン時は常に最新を取りに行き（ブラウザの一時保存も使わない）、失敗したら保存済みのものを返す。
-const CACHE = 'mikkabozu-v5';
-const FILES = ['./', 'index.html', 'styles.css', 'config.js', 'methods.js', 'app.js', 'beta.js', 'body.js', 'manifest.webmanifest', 'icons/icon-192.png'];
+const CACHE = 'mikkabozu-v6';
+const FILES = ['./', 'index.html', 'styles.css', 'config.js', 'methods.js', 'app.js', 'beta.js', 'body.js', 'keep.js', 'manifest.webmanifest', 'icons/icon-192.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

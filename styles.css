@@ -248,3 +248,13 @@ label.q { display: block; }
 .bf-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 14px; }
 .bf-row span { flex: 1; }
 .bf-row .chip { padding: 6px 12px; }
+
+/* 続けている習慣 */
+.card.og { margin-top: 12px; }
+.og-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.og-row .chip.check { margin-top: 0; white-space: nowrap; }
+.og-row .chip:disabled { opacity: .45; }
+.og-stop { margin: 2px 0 0 46px; font-size: 12px; text-align: left; }
+.og-review { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 0 46px; padding: 8px 10px; background: var(--soft); border-radius: 12px; font-size: 13px; }
+.og-review span { flex: 1; min-width: 9em; font-weight: 700; }
+.card.og > .muted { margin-top: 14px; }
