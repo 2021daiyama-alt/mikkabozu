@@ -14,7 +14,7 @@ let modal = null; // 文字を見せてコピーしてもらう画面（beta.js 
 const draft = {}; // 入力途中の文字。画面を描き直しても消えないようにここに持つ
 
 function load() {
-  const base = { current: null, history: [], offset: 0, custom: [], outbox: [] };
+  const base = { current: null, history: [], offset: 0, custom: [], outbox: [], body: [] };
   try { return Object.assign(base, JSON.parse(localStorage.getItem(KEY)) || {}); }
   catch { return base; }
 }
@@ -178,7 +178,7 @@ const actions = {
   nextday: () => { state.offset++; },
   reset: () => {
     if (!resetArmed) { resetArmed = true; return; }
-    state = { current: null, history: [], offset: 0, custom: [], outbox: [] }; resetArmed = false; tab = 'home';
+    state = { current: null, history: [], offset: 0, custom: [], outbox: [], body: [] }; resetArmed = false; tab = 'home';
   },
 };
 
@@ -333,6 +333,7 @@ function viewRecord() {
     ${stamps}
     <h3>これまでの三日坊主</h3>
     ${hist || '<p class="muted">まだ記録がありません。</p>'}
+    ${bodySection()}
   </section>`;
 }
 

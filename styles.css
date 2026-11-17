@@ -212,3 +212,33 @@ label.q { display: block; }
   max-width: calc(100% - 32px); text-align: center; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
 }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* からだの記録 */
+.bodyform { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+.bodyform .f:first-child { grid-column: 1 / -1; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--ink); margin: 4px 0 2px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.chart { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 8px 4px; margin-top: 10px; touch-action: pan-y; }
+.chart.empty { padding: 12px 14px; }
+.chart h4 { font-size: 13px; margin: 0 6px 2px; }
+.chart h4 small { color: var(--muted); font-weight: 500; margin-left: 6px; }
+.chart svg { display: block; width: 100%; height: auto; }
+.grid { stroke: var(--line); stroke-width: 1; }
+.axis { fill: var(--muted); font-size: 10px; }
+.cross { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.daily { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-linejoin: round; opacity: .75; }
+.daily-dot { fill: var(--card); stroke: var(--muted); stroke-width: 1.5; }
+.avg { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.avg-dot { fill: var(--accent); stroke: var(--card); stroke-width: 2; }
+.end { fill: var(--ink); font-size: 12px; font-weight: 700; }
+.tip-box {
+  position: absolute; top: 30px; transform: translateX(-50%); pointer-events: none; white-space: nowrap;
+  background: var(--ink); color: var(--bg); border-radius: 10px; padding: 6px 10px; font-size: 11px; line-height: 1.5;
+}
+.tip-box > b { display: block; }
+.tip-box span { display: block; }
+.bodylist { margin-top: 12px; font-size: 13px; }
+.bodylist summary { cursor: pointer; color: var(--muted); padding: 6px 0; }
+.bodylist ul { list-style: none; padding: 0; }
+.bodylist li { display: grid; grid-template-columns: 3.5em 1fr 1fr auto; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.bodylist .link { margin: 0; font-size: 12px; }

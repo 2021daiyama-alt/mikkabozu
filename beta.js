@@ -101,7 +101,7 @@ Object.assign(actions, {
     try { obj = JSON.parse(draft.imp || ''); } catch { obj = null; }
     if (!obj || !Array.isArray(obj.history)) { importArmed = false; toast('読み込めませんでした。書き出した文字をそのまま貼りつけてください'); return; }
     if (!importArmed) { importArmed = true; return; }
-    state = Object.assign({ current: null, history: [], offset: 0, custom: [], outbox: [] }, obj);
+    state = Object.assign({ current: null, history: [], offset: 0, custom: [], outbox: [], body: [] }, obj);
     importArmed = false; draft.imp = ''; tab = 'home';
     toast('記録を読み込みました');
   },
