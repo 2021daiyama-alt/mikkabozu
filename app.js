@@ -139,6 +139,30 @@ function archive() {
   }
   state.current = null;
 }
+// 1日につき記録は1つ。3日分たまったら、それ以上は残せない。
+function record(date, done) {
+  const c = state.current;
+  if (!c || faced(c) >= ROUND || days().some(d => d.date === date)) return;
+  (done ? c.checkins : (c.misses || (c.misses = []))).push(date);
+  c.last = date;
+}
+// いまのチャレンジで、記録し忘れている過去の日（始めた日〜きのう。さかのぼれるのは6日前まで）。
+function missedDates() {
+  const c = state.current;
+  if (!c || faced(c) >= ROUND) return [];
+  const taken = new Set(days().map(d => d.date)), out = [];
+  for (let i = 6; i >= 1; i--) {
+    const d = addDays(today(), -i);
+    if (d >= c.startedAt && !taken.has(d)) out.push(d);
+  }
+  return out;
+}
+const WEEK = ['日', '月', '火', '水', '木', '金', '土'];
+function dayLabel(s) {
+  const [y, m, d] = s.split('-').map(Number), diff = Math.round((new Date(now().toDateString()) - new Date(y, m - 1, d)) / 864e5);
+  return `${m}/${d}（${WEEK[new Date(y, m - 1, d).getDay()]}）${diff === 1 ? ' きのう' : diff === 2 ? ' おととい' : ''}`;
+}
+
 // 挑戦中は、3日やりきって評価するまで次を選べない（途中で変えない）。
 function locked() {
   const c = state.current;
@@ -156,21 +180,17 @@ const actions = {
   open: v => { sheetId = v; },
   close: () => { sheetId = null; },
   start,
-  checkin: () => {
-    const c = state.current;
-    if (c && faced(c) < ROUND && !recordedToday()) c.checkins.push(today());
-  },
-  miss: () => {
-    const c = state.current;
-    if (c && faced(c) < ROUND && !recordedToday()) (c.misses || (c.misses = [])).push(today());
-  },
-  // 押しまちがい用：今日の記録だけ取り消せる
+  checkin: () => record(today(), true),
+  miss: () => record(today(), false),
+  // 記録し忘れた日を、あとから残す。val は「日付|1（やった）か 0（できなかった）」
+  fill: val => { const [date, done] = val.split('|'); if (missedDates().includes(date)) record(date, done === '1'); },
+  // 押しまちがい用：直前に残した記録を1つだけ取り消せる
   undo: () => {
     const c = state.current;
-    if (!c) return;
-    c.checkins = c.checkins.filter(d => d !== today());
-    c.misses = (c.misses || []).filter(d => d !== today());
-    c.rating = null;
+    if (!c || !c.last) return;
+    c.checkins = c.checkins.filter(d => d !== c.last);
+    c.misses = (c.misses || []).filter(d => d !== c.last);
+    c.last = null; c.rating = null;
   },
   rate: v => { if (state.current) state.current.rating = v; },
   switch: () => { if (!locked()) { archive(); tab = 'catalog'; } },
@@ -218,7 +238,7 @@ function hero() {
 function dots(log) {
   return `<div class="dots">${[0, 1, 2].map(i => {
     const d = log[i];
-    return `<div class="dot ${d ? (d.done ? 'on' : 'miss') : ''}"><span>${d ? (d.done ? '✓' : '–') : i + 1}</span><small>${i + 1}日目</small></div>`;
+    return `<div class="dot ${d ? (d.done ? 'on' : 'miss') : ''}"><span>${d ? (d.done ? '✓' : '–') : i + 1}</span><small>${d ? short(d.date) : `${i + 1}日目`}</small></div>`;
   }).join('')}</div>`;
 }
 
@@ -237,7 +257,15 @@ function currentCard() {
     </section>`;
   }
   const m = M(c.methodId), log = dayLog(c), n = log.length, did = c.checkins.length;
-  const undo = log.some(d => d.date === today()) ? '<button class="link" data-act="undo">今日の記録を取り消す</button>' : '';
+  const undo = c.last && log.some(d => d.date === c.last) ? `<button class="link" data-act="undo">${short(c.last)}の記録を取り消す</button>` : '';
+  const missed = missedDates();
+  const backfill = missed.length ? `
+    <div class="backfill">
+      <p class="q">記録し忘れた日</p>
+      ${missed.map(d => `<div class="bf-row"><span>${dayLabel(d)}</span>
+        <button class="chip" data-act="fill" data-val="${d}|1">やった</button>
+        <button class="chip" data-act="fill" data-val="${d}|0">できなかった</button></div>`).join('')}
+    </div>` : '';
   if (n >= ROUND) {
     return `
     <section class="card done">
@@ -263,11 +291,13 @@ function currentCard() {
     <p class="todo">${m.todo}</p>
     ${dots(log)}
     ${rec
-      ? `<button class="btn primary" disabled>${rec.done ? '今日は達成 ✓ また明日' : '今日は記録ずみ。また明日'}</button>${undo}`
+      ? `<button class="btn primary" disabled>${rec.done ? '今日は達成 ✓ また明日' : '今日は記録ずみ。また明日'}</button>`
       : recordedToday()
         ? `<button class="btn primary" disabled>今日は記録ずみ。また明日</button>`
         : `<button class="btn primary big" data-act="checkin">今日やった！</button>
            <button class="btn miss" data-act="miss">今日はできなかった</button>`}
+    ${backfill}
+    ${undo}
     ${m.tip ? `<p class="tip">💡 ${m.tip}</p>` : ''}
     <p class="muted center stay">あと${ROUND - n}日。3日向き合ったら、次の方法をためそう。<br>できなかった日も、試した結果のひとつ。</p>
   </section>`;

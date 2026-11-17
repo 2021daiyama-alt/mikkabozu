@@ -1,5 +1,5 @@
 // オフラインでも開けるようにする。オンライン時は常に最新を取りに行き（ブラウザの一時保存も使わない）、失敗したら保存済みのものを返す。
-const CACHE = 'mikkabozu-v4';
+const CACHE = 'mikkabozu-v5';
 const FILES = ['./', 'index.html', 'styles.css', 'config.js', 'methods.js', 'app.js', 'beta.js', 'body.js', 'manifest.webmanifest', 'icons/icon-192.png'];
 
 self.addEventListener('install', e => {
