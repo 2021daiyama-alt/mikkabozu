@@ -1,0 +1,16 @@
+{
+  "name": "みっかぼうず — 3日坊主ダイエット",
+  "short_name": "みっかぼうず",
+  "description": "3日坊主も、10種類やれば1ヶ月。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFF8F0",
+  "theme_color": "#FFF8F0",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
