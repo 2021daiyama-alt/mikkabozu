@@ -65,9 +65,31 @@ function resultText(withNotes) {
   ].join('\n');
 }
 
+// はじめて開いた人に一度だけ見せる説明。記録がまだ無く、まだ見ていない人に出す。β版タブからもう一度見られる。
+function showIntro() { return !!draft.intro || (!state.seenIntro && !rounds().length); }
+function introSheet() {
+  return `
+  <div class="overlay"></div>
+  <div class="sheet intro" role="dialog" aria-label="みっかぼうずの使い方">
+    <div class="sheet-emoji">🌱</div>
+    <h2>3日だけ、やってみよう</h2>
+    <p class="intro-lead">三日坊主でも大丈夫。<br>10種類ためせば、1ヶ月続いたことになります。</p>
+    <ol class="steps">
+      <li><b>気になるダイエット法を1つえらぶ</b><span>野菜から食べる、階段を使う、など小さなことから。</span></li>
+      <li><b>3日だけやってみる</b><span>毎日「今日やった！」を押すだけ。できなかった日も、そのまま記録できます。</span></li>
+      <li><b>3日たったら、次の方法へ</b><span>気持ちよくできたものは、続けながら次をためせます。</span></li>
+    </ol>
+    <p class="intro-note">早くやせるためのアプリではありません。自分に合う、気持ちよく続けられる習慣を、自分の体でためして探すためのアプリです。</p>
+    <button class="btn primary big" data-act="introDone">はじめる</button>
+    <p class="muted center">登録は不要です。記録はこのスマホの中に保存されます。</p>
+  </div>`;
+}
+
 let importArmed = false;
 Object.assign(actions, {
   close: () => { sheetId = null; modal = null; },
+  introDone: () => { state.seenIntro = true; draft.intro = false; tab = 'home'; },
+  introShow: () => { draft.intro = true; },
   toggle: k => { draft[k] = draft[k] === false; },
   addMethod: () => {
     const name = (draft.mName || '').trim(), todo = (draft.mTodo || '').trim(), why = (draft.mWhy || '').trim();
@@ -143,6 +165,7 @@ function viewBeta() {
       </ul>
       <small>バージョン ${CONFIG.version}</small>
     </div>
+    <button class="btn small" data-act="introShow">はじめの説明をもう一度見る</button>
 
     <h3>ダイエット法を追加・提案する</h3>
     <p class="muted">試してみたい方法を書くと、あなたの選択肢に加わります。追加した方法は運営にも届き、良いものはほかの人の選択肢にも載せていきます。</p>

@@ -4,12 +4,13 @@
 //           受け取り口を用意したら、そのURLをここに入れるだけで自動送信に切りかわる。
 //           （送る形式：POST、本文は JSON 文字列 { kind, text, version, at }）
 const CONFIG = {
-  version: 'β 0.9',
+  version: 'β 0.10',
   endpoint: 'https://script.google.com/macros/s/AKfycbxb9_KqaBwCPIoWAR-EGh69PTjVUzLlZjb9kVrLqlymMat0vILf9ucvlQ4vgQhf8n1B3g/exec',
 };
 
 // 「新しくなったところ」に出す内容（新しい順）
 const CHANGES = [
+  ['β 0.10', 'はじめて開いたときに、使い方の短い説明を出すように。'],
   ['β 0.9', '気持ちよくできた方法を、続けながら次の方法をためせるように（3つまで）。'],
   ['β 0.8', '記録し忘れた日を、あとから残せるように（6日前まで）。'],
   ['β 0.7', '体重と体脂肪率を残せる「からだの記録」を追加（きろく画面の下）。'],

@@ -258,3 +258,16 @@ label.q { display: block; }
 .og-review { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 0 46px; padding: 8px 10px; background: var(--soft); border-radius: 12px; font-size: 13px; }
 .og-review span { flex: 1; min-width: 9em; font-weight: 700; }
 .card.og > .muted { margin-top: 14px; }
+
+/* はじめての説明 */
+.sheet.intro { max-height: 94vh; }
+.intro-lead { text-align: center; font-size: 14px; color: var(--muted); margin-top: 4px; }
+.steps { list-style: none; padding: 0; margin: 18px 0 14px; counter-reset: step; }
+.steps li { position: relative; padding: 0 0 14px 44px; counter-increment: step; }
+.steps li::before {
+  content: counter(step); position: absolute; left: 0; top: 0; width: 32px; height: 32px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font-weight: 800; font-size: 15px;
+}
+.steps b { display: block; font-size: 15px; }
+.steps span { display: block; font-size: 13px; color: var(--muted); }
+.intro-note { background: var(--soft); border-radius: 14px; padding: 12px 14px; font-size: 13px; margin-bottom: 4px; }

@@ -374,6 +374,7 @@ function viewRecord() {
 
 function sheet() {
   if (modal) return modalSheet();
+  if (showIntro()) return introSheet();
   if (!sheetId) return '';
   const m = M(sheetId), s = methodStats(m.id);
   const c = state.current, cur = c && c.methodId === m.id;
