@@ -7,7 +7,7 @@ function toast(msg) {
 }
 function rawName(id) {
   const c = (state.custom || []).find(x => x.id === id);
-  return c ? c.name : (METHODS.find(m => m.id === id) || {}).name || id;
+  return c ? c.name : ([...METHODS, ...RETIRED].find(m => m.id === id) || {}).name || id;
 }
 
 // 運営に届ける。受け取り口（CONFIG.endpoint）があれば自動送信、なければ共有かコピーで送ってもらう。

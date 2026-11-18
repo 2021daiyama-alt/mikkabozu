@@ -39,7 +39,7 @@ function methods() {
     name: esc(c.name), todo: esc(c.todo), why: esc(c.why || ''),
   }))];
 }
-const M = id => methods().find(m => m.id === id);
+const M = id => methods().find(m => m.id === id) || RETIRED.find(m => m.id === id);
 function rounds() { return state.current ? [...state.history, state.current] : state.history; }
 // 1チャレンジの日ごとの記録。checkins＝やった日、misses＝できなかった日。どちらも「向き合った1日」として3日に数える。
 function dayLog(r) {
@@ -292,6 +292,7 @@ function currentCard() {
     <div class="badge soft">いまのチャレンジ ・ ${CATS[m.cat]}</div>
     <h2>${m.emoji} ${m.name}</h2>
     <p class="todo">${m.todo}</p>
+    ${m.feel ? `<p class="feel">👀 ここに注目：${m.feel}</p>` : ''}
     ${dots(log)}
     ${rec
       ? `<button class="btn primary" disabled>${rec.done ? '今日は達成 ✓ また明日' : '今日は記録ずみ。また明日'}</button>`
@@ -382,7 +383,8 @@ function sheet() {
   const notes = past.length ? `<dl><dt>前にやったときのメモ</dt>${past.map(r =>
     `<dd class="memo-past"><small>${short(dayLog(r)[0].date)}〜${r.rating ? ' ・ ' + RATINGS[r.rating] : ''}</small>${esc(r.note.trim())}</dd>`).join('')}</dl>` : '';
   const left = c ? ROUND - faced(c) : 0, wait = cooldownUntil(m.id);
-  const label = cur && left > 0 ? 'いま挑戦中です'
+  const label = m.retired ? 'いまはカタログから外した方法です'
+    : cur && left > 0 ? 'いま挑戦中です'
     : c && left > 0 ? `「${M(c.methodId).name}」の3日間が終わったら選べます（あと${left}日）`
     : c && !c.rating ? `先に「${M(c.methodId).name}」の感想をえらぼう`
     : isOngoing(m.id) ? 'いま継続中です'
@@ -396,11 +398,12 @@ function sheet() {
     <p class="muted center">${CATS[m.cat]}${s.days ? ` ・ これまで${s.days}日` : ''}</p>
     <dl>
       <dt>やること</dt><dd>${m.todo}</dd>
+      ${m.feel ? `<dt>3日間、ここに注目</dt><dd>${m.feel}</dd>` : ''}
       ${m.why ? `<dt>${m.custom ? '良いと思う理由' : 'なぜ効く？'}</dt><dd>${m.why}</dd>` : ''}
       ${m.tip ? `<dt>コツ</dt><dd>${m.tip}</dd>` : ''}
     </dl>
     ${notes}
-    <button class="btn primary" data-act="start" data-val="${m.id}" ${locked() || wait || isOngoing(m.id) ? 'disabled' : ''}>${label}</button>
+    <button class="btn primary" data-act="start" data-val="${m.id}" ${m.retired || locked() || wait || isOngoing(m.id) ? 'disabled' : ''}>${label}</button>
     <button class="btn" data-act="close">とじる</button>
     <button class="link" data-act="fbAbout" data-val="${m.id}">この方法について意見を送る</button>
     ${m.custom && !rounds().some(r => r.methodId === m.id) ? `<button class="link" data-act="delMethod" data-val="${m.id}">この方法を削除する</button>` : ''}
